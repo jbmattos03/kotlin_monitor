@@ -1,6 +1,6 @@
 package OTelHandler
 
-import LocalCollector.SystemMonitor
+import shared.SystemMonitor
 import io.opentelemetry.api.metrics.Meter
 import io.opentelemetry.api.metrics.ObservableDoubleMeasurement
 import io.opentelemetry.api.metrics.ObservableLongMeasurement
@@ -12,16 +12,17 @@ import io.opentelemetry.exporter.otlp.http.metrics.OtlpHttpMetricExporter
 import java.time.Duration
 import io.github.cdimascio.dotenv.dotenv
 
-class OTelConfig {
+class OTelConfig(private val systemMonitor: SystemMonitor) {
     // Environment variables
     val dotenv = dotenv()
-    val IP_ADDR = dotenv["IP_ADDR"] ?: ""
-    val HOST = dotenv["HOST"] ?: "localhost"
-    val SERVICE_NAME = "$HOST-system-monitor"
-    val OTLP_ENDPOINT = "http://$IP_ADDR:4318/v1/metrics"
+    var IP_ADDR = dotenv["IP_ADDR"] ?: ""
+    var HOST = dotenv["HOST"] ?: "localhost"
+    var SERVICE_NAME = "$HOST-system-monitor"
+    var OTLP_ENDPOINT = "http://$IP_ADDR:4318/v1/metrics"
 
-    val systemMonitor: SystemMonitor = SystemMonitor()
     val interval: Long = systemMonitor.interval
+    private lateinit var provider: SdkMeterProvider
+    private lateinit var exporter: OtlpHttpMetricExporter
 
     // Create a resource
     fun createResource(): Resource {
@@ -101,25 +102,21 @@ class OTelConfig {
     }
 
     // Main function
-    fun main() {
+    fun initialize() {
         val resource = createResource()
-        val exporter = createExporter()
+        exporter = createExporter()
         val reader = createMeterReader(exporter)
-        val provider = createProvider(resource, reader)
+        provider = createProvider(resource, reader)
         val meter = createMeter(provider)
         createMetrics(meter)
 
-        // Add a graceful shutdown hook
-        Runtime.getRuntime().addShutdownHook(Thread {
-            provider.shutdown()
-            exporter.close()
-        })
-
-        // Keep the application running to allow metrics to be collected
-        println("System Monitor started. Press Ctrl+C to stop.")
+        println("System monitoring started.")
         println("$HOST's System Monitor")
-        while (true) {
-            Thread.sleep(interval)
-        }
+    }
+
+    fun shutdown() {
+        provider?.shutdown()
+        exporter?.close()
+        println("System monitoring stopped.")
     }
 }

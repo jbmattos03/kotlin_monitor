@@ -1,4 +1,4 @@
-package LocalCollector
+package shared
 
 import io.github.cdimascio.dotenv.dotenv
 import oshi.SystemInfo
@@ -12,18 +12,7 @@ val dotenv = dotenv()
 val IP_ADDR = dotenv["IP_ADDR"] ?: ""
 val HOST = dotenv["HOST"] ?: "localhost"
 
-// Creating a data class to hold the system information
-data class SystemInfoData(
-    val cpuUsage: Double,
-    val memoryUsage: Double,
-    val diskUsage: Double,
-    val diskWrite: Long,
-    val diskRead: Long,
-    val networkRecv: Long,
-    val networkSent: Long
-)
-
-class SystemMonitor() {
+class JVMSystemMonitor() : SystemMonitor {
     // Properties
     val processor: CentralProcessor
     var prevTicks: LongArray
@@ -31,7 +20,7 @@ class SystemMonitor() {
     val disk: HWDiskStore
     var diskPrevTime: Long
     val networkInterface: NetworkIF
-    val interval: Long = 5000 // 5 seconds
+    override val interval: Long = 5000 // 5 seconds
 
     init {
         val systemInfo = SystemInfo()
@@ -45,7 +34,7 @@ class SystemMonitor() {
             ?: throw IllegalStateException("No suitable network interface found") // Exclude loopback interface
     }
 
-    fun cpuUsage(): Double {
+    override fun cpuUsage(): Double {
         val currTicks = processor.systemCpuLoadTicks
         val cpuLoad = processor.getSystemCpuLoadBetweenTicks(prevTicks) * 100
 
@@ -54,7 +43,7 @@ class SystemMonitor() {
         return cpuLoad
     }
 
-    fun memoryUsage(): Double {
+    override fun memoryUsage(): Double {
         val totalMemory = memory.total
         val availableMemory = memory.available
         val usedMemory = totalMemory - availableMemory
@@ -63,7 +52,7 @@ class SystemMonitor() {
         return usedMemoryPercentage
     }
 
-    fun diskUsage(): Double {
+    override fun diskUsage(): Double {
         disk.updateAttributes() // Update disk attributes
         val diskCurrTime = disk.transferTime
         val diskBusyTime = ((diskCurrTime - diskPrevTime).toDouble() / interval) * 100
@@ -73,35 +62,39 @@ class SystemMonitor() {
         return diskBusyTime
     }
 
-    fun diskWrite(): Long {
+    override fun diskWrite(): Long {
         disk.updateAttributes() // Update disk attributes
         val diskWrites = disk.getWrites()
 
         return diskWrites
     }
 
-    fun diskRead(): Long {
+    override fun diskRead(): Long {
         disk.updateAttributes() // Update disk attributes
         val diskReads = disk.getReads()
 
         return diskReads
     }
 
-    fun networkRecv(): Long {
+    override fun networkRecv(): Long {
         networkInterface.updateAttributes() // Update network attributes
         val bytesRecv = networkInterface.getBytesRecv()
 
         return bytesRecv
     }
 
-    fun networkSent(): Long {
+    override fun networkSent(): Long {
         networkInterface.updateAttributes() // Update network attributes
         val bytesSent = networkInterface.getBytesSent()
 
         return bytesSent
     }
 
-    fun run(): SystemInfoData {
+    override fun getDeviceType(): String {
+        return System.getProperty("os.name").replace(Regex("\\s.*"), "")
+    }
+
+    override fun run(): SystemInfoData {
         val cpuRes = cpuUsage()
         val memoryRes = memoryUsage()
         val diskRes = diskUsage()
@@ -109,8 +102,9 @@ class SystemMonitor() {
         val diskReadRes = diskRead()
         val networkRecvRes = networkRecv()
         val networkSentRes = networkSent()
+        val deviceTypeRes = getDeviceType()
 
-        return SystemInfoData(cpuRes, memoryRes, diskRes, diskWriteRes, diskReadRes, networkRecvRes, networkSentRes)
+        return SystemInfoData(cpuRes, memoryRes, diskRes, diskWriteRes, diskReadRes, networkRecvRes, networkSentRes, deviceTypeRes)
     }
 
     fun printResults(stats: SystemInfoData) {
@@ -121,6 +115,7 @@ class SystemMonitor() {
         println("Disk Read: ${stats.diskRead} bytes")
         println("Network Received: ${stats.networkRecv} bytes")
         println("Network Sent: ${stats.networkSent} bytes")
+        println("Device Type: ${stats.deviceType}")
         println("--------------------------------------------------")
     }
 
