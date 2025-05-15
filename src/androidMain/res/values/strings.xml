@@ -1,0 +1,4 @@
+<resources>
+    <string name="start_service">START SERVICE</string>
+    <string name="stop_service">STOP SERVICE</string>
+</resources>
