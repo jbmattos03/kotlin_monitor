@@ -1,0 +1,6 @@
+<resources>
+    <style
+        name="theme_kotlin_monitor"
+        parent="Theme.AppCompat.Light.DarkActionBar" >
+    </style>
+</resources>
