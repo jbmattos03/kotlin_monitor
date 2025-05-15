@@ -1,27 +1,24 @@
 package com.example.kotlinmonitor
 
+import shared.MetricController
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import OTelHandler.OTelConfig
-import shared.AndroidSystemMonitor
-import shared.AndroidController
-import shared.MetricController
+import android.content.Intent
+import androidx.core.content.ContextCompat
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var controller: MetricController
-
-    override fun onCreate(savedInstanceState: Bundle?) {
+   override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val systemMonitor = AndroidSystemMonitor(this)
-        val otel = OTelConfig(systemMonitor)
-        controller = AndroidController(otel)
+        val serviceIntent = Intent(this, MetricsService::class.java)
+        ContextCompat.startForegroundService(this, serviceIntent)
 
-        controller.start()
     }
 
     override fun onDestroy() {
-        controller.stop()
         super.onDestroy()
+
+        val serviceIntent = Intent(this, MetricsService::class.java)
+        stopService(serviceIntent)
     }
 }
