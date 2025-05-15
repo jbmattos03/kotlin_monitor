@@ -1,4 +1,4 @@
-package OTelHandler
+package otelHandler
 
 import shared.SystemMonitor
 import io.opentelemetry.api.metrics.Meter
@@ -11,35 +11,64 @@ import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader
 import io.opentelemetry.exporter.otlp.http.metrics.OtlpHttpMetricExporter
 import java.time.Duration
 import io.github.cdimascio.dotenv.dotenv
+import android.util.Log
+import android.content.Context
+import com.example.kotlinmonitor.R
 
 class OTelConfig(private val systemMonitor: SystemMonitor) {
-    // Environment variables
-    val dotenv = dotenv()
-    var IP_ADDR = dotenv["IP_ADDR"] ?: ""
-    var HOST = dotenv["HOST"] ?: "localhost"
-    var SERVICE_NAME = "$HOST-system-monitor"
-    var OTLP_ENDPOINT = "http://$IP_ADDR:4318/v1/metrics"
-
-    val interval: Long = systemMonitor.interval
+    private val interval: Long = systemMonitor.interval
     private lateinit var provider: SdkMeterProvider
     private lateinit var exporter: OtlpHttpMetricExporter
 
+    // init function
+    fun init(context: Context) {
+        val dotenv = try {
+            dotenv {
+                directory = "/res/raw"
+                filename = "dotenv"
+            }
+        } catch(error: Exception) {
+            error.printStackTrace()
+            throw RuntimeException("Error loading environment variables")
+        }
+
+        val ip = dotenv["IP_ADDR"] ?: ""
+        val host = dotenv["HOST"] ?: "localhost"
+        val serviceName = "${host}-system-monitor"
+        val otlpEndpoint = "http://${ip}:4318/v1/metrics"
+
+        if (otlpEndpoint.isEmpty()) {
+            Log.e("OTelConfig", "OTLP endpoint is empty. Please check your environment variables.")
+            throw RuntimeException("OTLP endpoint is empty")
+        }
+
+        val resource = createResource(serviceName)
+        exporter = createExporter(otlpEndpoint)
+        val reader = createMeterReader(exporter)
+        provider = createProvider(resource, reader)
+        val meter = createMeter(provider, serviceName)
+        createMetrics(meter)
+
+        log("System monitoring started.")
+        log("$host's System Monitor")
+
+    }
     // Create a resource
-    fun createResource(): Resource {
+    private fun createResource(serviceName: String): Resource {
         return Resource.getDefault().toBuilder()
-        .put(AttributeKey.stringKey("service.name"), SERVICE_NAME)
+        .put(AttributeKey.stringKey("service.name"), serviceName)
         .build()
     }
 
      // Create a meter reader
-    fun createMeterReader(exporter: OtlpHttpMetricExporter): PeriodicMetricReader {
+    private fun createMeterReader(exporter: OtlpHttpMetricExporter): PeriodicMetricReader {
         return PeriodicMetricReader.builder(exporter)
             .setInterval(Duration.ofSeconds(5)) // 5 seconds
             .build()
     }
 
     // Create a meter provider
-    fun createProvider(resource: Resource, reader: PeriodicMetricReader): SdkMeterProvider {
+    private fun createProvider(resource: Resource, reader: PeriodicMetricReader): SdkMeterProvider {
         return SdkMeterProvider.builder()
             .setResource(resource)
             .registerMetricReader(reader)
@@ -47,16 +76,16 @@ class OTelConfig(private val systemMonitor: SystemMonitor) {
     }
 
     // Create a meter
-    fun createMeter(provider: SdkMeterProvider): Meter {
-        return provider.get(SERVICE_NAME)
+    private fun createMeter(provider: SdkMeterProvider, serviceName: String): Meter {
+        return provider.get(serviceName)
     }
 
     // Create an exporter
-    fun createExporter(): OtlpHttpMetricExporter {
+    private fun createExporter(endpoint: String): OtlpHttpMetricExporter {
         return OtlpHttpMetricExporter.builder()
-            .setEndpoint(OTLP_ENDPOINT)
+            .setEndpoint(endpoint)
             .setTimeout(Duration.ofSeconds(interval / 1000)) // Convert milliseconds to seconds
-            .build();
+            .build()
     }
 
     // Create metrics
@@ -101,22 +130,13 @@ class OTelConfig(private val systemMonitor: SystemMonitor) {
             }
     }
 
-    // Main function
-    fun initialize() {
-        val resource = createResource()
-        exporter = createExporter()
-        val reader = createMeterReader(exporter)
-        provider = createProvider(resource, reader)
-        val meter = createMeter(provider)
-        createMetrics(meter)
-
-        println("System monitoring started.")
-        println("$HOST's System Monitor")
-    }
-
     fun shutdown() {
         provider?.shutdown()
         exporter?.close()
-        println("System monitoring stopped.")
+        log("System monitoring stopped.")
+    }
+
+    fun log(string: String) {
+        Log.d("OTelConfig", "message: $string")
     }
 }
