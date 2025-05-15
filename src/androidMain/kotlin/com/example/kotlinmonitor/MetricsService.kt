@@ -29,14 +29,13 @@ class MetricsService : Service() {
 
             systemMonitor = AndroidSystemMonitor(applicationContext)
             otel = OTelConfig(systemMonitor)
-            otel.init(applicationContext)
+            //otel.init(applicationContext)
             controller = AndroidController(otel, applicationContext)
 
             log("Service created.")
         } catch (error: Exception) {
             log("Error in onCreate: ${error.message}")
         }
-
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
