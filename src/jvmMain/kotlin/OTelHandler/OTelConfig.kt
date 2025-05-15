@@ -1,4 +1,4 @@
-package OTelHandler
+package otelHandler
 
 import shared.SystemMonitor
 import io.opentelemetry.api.metrics.Meter
@@ -12,34 +12,34 @@ import io.opentelemetry.exporter.otlp.http.metrics.OtlpHttpMetricExporter
 import java.time.Duration
 import io.github.cdimascio.dotenv.dotenv
 
-class OTelConfig(private val systemMonitor: SystemMonitor) {
-    // Environment variables
-    val dotenv = dotenv()
-    var IP_ADDR = dotenv["IP_ADDR"] ?: ""
-    var HOST = dotenv["HOST"] ?: "localhost"
-    var SERVICE_NAME = "$HOST-system-monitor"
-    var OTLP_ENDPOINT = "http://$IP_ADDR:4318/v1/metrics"
+// Environment variables
+val dotenv = dotenv()
+var IP_ADDR = dotenv["IP_ADDR"] ?: ""
+var HOST = dotenv["HOST"] ?: "localhost"
+var SERVICE_NAME = "$HOST-system-monitor"
+var OTLP_ENDPOINT = "http://$IP_ADDR:4318/v1/metrics"
 
-    val interval: Long = systemMonitor.interval
+class OTelConfig(private val systemMonitor: SystemMonitor) {
+    private val interval: Long = systemMonitor.interval
     private lateinit var provider: SdkMeterProvider
     private lateinit var exporter: OtlpHttpMetricExporter
 
     // Create a resource
-    fun createResource(): Resource {
+    private fun createResource(): Resource {
         return Resource.getDefault().toBuilder()
         .put(AttributeKey.stringKey("service.name"), SERVICE_NAME)
         .build()
     }
 
      // Create a meter reader
-    fun createMeterReader(exporter: OtlpHttpMetricExporter): PeriodicMetricReader {
+    private fun createMeterReader(exporter: OtlpHttpMetricExporter): PeriodicMetricReader {
         return PeriodicMetricReader.builder(exporter)
             .setInterval(Duration.ofSeconds(5)) // 5 seconds
             .build()
     }
 
     // Create a meter provider
-    fun createProvider(resource: Resource, reader: PeriodicMetricReader): SdkMeterProvider {
+    private fun createProvider(resource: Resource, reader: PeriodicMetricReader): SdkMeterProvider {
         return SdkMeterProvider.builder()
             .setResource(resource)
             .registerMetricReader(reader)
@@ -47,12 +47,12 @@ class OTelConfig(private val systemMonitor: SystemMonitor) {
     }
 
     // Create a meter
-    fun createMeter(provider: SdkMeterProvider): Meter {
+    private fun createMeter(provider: SdkMeterProvider): Meter {
         return provider.get(SERVICE_NAME)
     }
 
     // Create an exporter
-    fun createExporter(): OtlpHttpMetricExporter {
+    private fun createExporter(): OtlpHttpMetricExporter {
         return OtlpHttpMetricExporter.builder()
             .setEndpoint(OTLP_ENDPOINT)
             .setTimeout(Duration.ofSeconds(interval / 1000)) // Convert milliseconds to seconds
@@ -110,7 +110,7 @@ class OTelConfig(private val systemMonitor: SystemMonitor) {
         val meter = createMeter(provider)
         createMetrics(meter)
 
-        println("System monitoring started.")
+        println("System Monitor started. Press Ctrl+C to stop.")
         println("$HOST's System Monitor")
     }
 

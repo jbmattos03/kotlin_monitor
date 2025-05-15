@@ -1,6 +1,6 @@
 package shared
 
-import OTelHandler.OTelConfig
+import otelHandler.OTelConfig
 
 class JVMController(private val otelConfig: OTelConfig) : MetricController {
     @Volatile
@@ -8,7 +8,6 @@ class JVMController(private val otelConfig: OTelConfig) : MetricController {
 
     override fun start() {
         otelConfig.initialize()
-        println("System Monitor started. Press Ctrl+C to stop.")
 
         // Add shutdown hook to handle Ctrl+C
         Runtime.getRuntime().addShutdownHook(Thread {

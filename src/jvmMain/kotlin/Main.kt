@@ -1,4 +1,4 @@
-import OTelHandler.OTelConfig
+import otelHandler.OTelConfig
 import shared.JVMSystemMonitor
 import shared.JVMController
 
