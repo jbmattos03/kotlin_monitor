@@ -7,19 +7,30 @@ import oshi.hardware.CentralProcessor
 import oshi.hardware.GlobalMemory
 import oshi.hardware.NetworkIF
 
+data class JVMSystemInfoData(
+    override var cpuUsage: Double,
+    override var memoryUsage: Double,
+    override var networkRecv: Long,
+    override var networkSent: Long,
+    override var deviceType: String,
+    var diskUsage: Double,
+    var diskWrite: Long,
+    var diskRead: Long
+) : SystemInfoData
+
 // Environment variables
 val dotenv = dotenv()
 val IP_ADDR = dotenv["IP_ADDR"] ?: ""
 val HOST = dotenv["HOST"] ?: "localhost"
 
-class JVMSystemMonitor() : SystemMonitor {
+class JVMSystemMonitor : SystemMonitor {
     // Properties
-    val processor: CentralProcessor
-    var prevTicks: LongArray
-    val memory: GlobalMemory
-    val disk: HWDiskStore
-    var diskPrevTime: Long
-    val networkInterface: NetworkIF
+    private val processor: CentralProcessor
+    private var prevTicks: LongArray
+    private val memory: GlobalMemory
+    private val disk: HWDiskStore
+    private var diskPrevTime: Long
+    private val networkInterface: NetworkIF
     override val interval: Long = 5000 // 5 seconds
 
     init {
@@ -52,7 +63,7 @@ class JVMSystemMonitor() : SystemMonitor {
         return usedMemoryPercentage
     }
 
-    override fun diskUsage(): Double {
+    fun diskUsage(): Double {
         disk.updateAttributes() // Update disk attributes
         val diskCurrTime = disk.transferTime
         val diskBusyTime = ((diskCurrTime - diskPrevTime).toDouble() / interval) * 100
@@ -62,30 +73,30 @@ class JVMSystemMonitor() : SystemMonitor {
         return diskBusyTime
     }
 
-    override fun diskWrite(): Long {
+    fun diskWrite(): Long {
         disk.updateAttributes() // Update disk attributes
-        val diskWrites = disk.getWrites()
+        val diskWrites = disk.writes
 
         return diskWrites
     }
 
-    override fun diskRead(): Long {
+    fun diskRead(): Long {
         disk.updateAttributes() // Update disk attributes
-        val diskReads = disk.getReads()
+        val diskReads = disk.reads
 
         return diskReads
     }
 
     override fun networkRecv(): Long {
         networkInterface.updateAttributes() // Update network attributes
-        val bytesRecv = networkInterface.getBytesRecv()
+        val bytesRecv = networkInterface.bytesRecv
 
         return bytesRecv
     }
 
     override fun networkSent(): Long {
         networkInterface.updateAttributes() // Update network attributes
-        val bytesSent = networkInterface.getBytesSent()
+        val bytesSent = networkInterface.bytesSent
 
         return bytesSent
     }
@@ -94,20 +105,20 @@ class JVMSystemMonitor() : SystemMonitor {
         return System.getProperty("os.name").replace(Regex("\\s.*"), "")
     }
 
-    override fun run(): SystemInfoData {
+    override fun run(): JVMSystemInfoData {
         val cpuRes = cpuUsage()
         val memoryRes = memoryUsage()
-        val diskRes = diskUsage()
-        val diskWriteRes = diskWrite()
-        val diskReadRes = diskRead()
         val networkRecvRes = networkRecv()
         val networkSentRes = networkSent()
         val deviceTypeRes = getDeviceType()
+        val diskRes = diskUsage()
+        val diskWriteRes = diskWrite()
+        val diskReadRes = diskRead()
 
-        return SystemInfoData(cpuRes, memoryRes, diskRes, diskWriteRes, diskReadRes, networkRecvRes, networkSentRes, deviceTypeRes)
+        return JVMSystemInfoData(cpuRes, memoryRes, networkRecvRes, networkSentRes, deviceTypeRes, diskRes, diskWriteRes, diskReadRes)
     }
 
-    fun printResults(stats: SystemInfoData) {
+    private fun printResults(stats: JVMSystemInfoData) {
         println("CPU Usage: ${stats.cpuUsage}%")
         println("Memory Usage: ${stats.memoryUsage}%")
         println("Disk Usage: ${stats.diskUsage}%")
