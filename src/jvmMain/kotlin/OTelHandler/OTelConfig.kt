@@ -1,6 +1,6 @@
 package otelHandler
 
-import shared.SystemMonitor
+import shared.JVMSystemMonitor
 import io.opentelemetry.api.metrics.Meter
 import io.opentelemetry.api.metrics.ObservableDoubleMeasurement
 import io.opentelemetry.api.metrics.ObservableLongMeasurement
@@ -19,7 +19,7 @@ var HOST = dotenv["HOST"] ?: "localhost"
 var SERVICE_NAME = "$HOST-system-monitor"
 var OTLP_ENDPOINT = "http://$IP_ADDR:4318/v1/metrics"
 
-class OTelConfig(private val systemMonitor: SystemMonitor) {
+class OTelConfig(private val systemMonitor: JVMSystemMonitor) {
     private val interval: Long = systemMonitor.interval
     private lateinit var provider: SdkMeterProvider
     private lateinit var exporter: OtlpHttpMetricExporter

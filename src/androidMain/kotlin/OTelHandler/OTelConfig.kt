@@ -1,6 +1,6 @@
 package otelHandler
 
-import shared.SystemMonitor
+import shared.AndroidSystemMonitor
 import io.opentelemetry.api.metrics.Meter
 import io.opentelemetry.api.metrics.ObservableDoubleMeasurement
 import io.opentelemetry.api.metrics.ObservableLongMeasurement
@@ -13,9 +13,8 @@ import java.time.Duration
 import io.github.cdimascio.dotenv.dotenv
 import android.util.Log
 import android.content.Context
-import com.example.kotlinmonitor.R
 
-class OTelConfig(private val systemMonitor: SystemMonitor) {
+class OTelConfig(private val systemMonitor: AndroidSystemMonitor) {
     private val interval: Long = systemMonitor.interval
     private lateinit var provider: SdkMeterProvider
     private lateinit var exporter: OtlpHttpMetricExporter
@@ -100,23 +99,6 @@ class OTelConfig(private val systemMonitor: SystemMonitor) {
                 measurement.record(systemMonitor.memoryUsage())
             }
 
-        meter.gaugeBuilder("disk_usage")
-            .buildWithCallback { measurement: ObservableDoubleMeasurement ->
-                measurement.record(systemMonitor.diskUsage())
-            }
-
-        meter.gaugeBuilder("disk_write")
-            .ofLongs()
-            .buildWithCallback { measurement: ObservableLongMeasurement ->
-                measurement.record(systemMonitor.diskWrite())
-            }
-
-        meter.gaugeBuilder("disk_read")
-            .ofLongs()
-            .buildWithCallback { measurement: ObservableLongMeasurement ->
-                measurement.record(systemMonitor.diskRead())
-            }
-
         meter.gaugeBuilder("network_recv")
             .ofLongs()
             .buildWithCallback { measurement: ObservableLongMeasurement ->
@@ -127,6 +109,11 @@ class OTelConfig(private val systemMonitor: SystemMonitor) {
             .ofLongs()
             .buildWithCallback { measurement: ObservableLongMeasurement ->
                 measurement.record(systemMonitor.networkSent())
+            }
+        
+        meter.gaugeBuilder("temperature")
+            .buildWithCallback { measurement: ObservableDoubleMeasurement ->
+                measurement.record(systemMonitor.temperature())
             }
     }
 
