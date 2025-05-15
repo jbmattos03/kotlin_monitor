@@ -1,10 +1,14 @@
 package shared
 
-import OTelHandler.OTelConfig
+import otelHandler.OTelConfig
+import android.content.Context
 
-class AndroidController(private val otelConfig: OTelConfig) : MetricController {
+class AndroidController(
+    private val otelConfig: OTelConfig,
+    private val context: Context
+) : MetricController {
     override fun start() {
-        otelConfig.initialize()
+        otelConfig.init(context.applicationContext)
     }
 
     override fun stop() {
