@@ -16,6 +16,7 @@ import android.content.Context
 
 class OTelConfig(private val systemMonitor: AndroidSystemMonitor) {
     private val interval: Long = systemMonitor.interval
+    private val device: String = systemMonitor.getDeviceType()
     private lateinit var provider: SdkMeterProvider
     private lateinit var exporter: OtlpHttpMetricExporter
 
@@ -32,14 +33,8 @@ class OTelConfig(private val systemMonitor: AndroidSystemMonitor) {
         }
 
         val ip = dotenv["IP_ADDR"] ?: ""
-        val host = dotenv["HOST"] ?: "localhost"
-        val serviceName = "${host}-system-monitor"
+        val serviceName = "${device}-system-monitor"
         val otlpEndpoint = "http://${ip}:4318/v1/metrics"
-
-        if (otlpEndpoint.isEmpty()) {
-            Log.e("OTelConfig", "OTLP endpoint is empty. Please check your environment variables.")
-            throw RuntimeException("OTLP endpoint is empty")
-        }
 
         val resource = createResource(serviceName)
         exporter = createExporter(otlpEndpoint)
@@ -49,7 +44,7 @@ class OTelConfig(private val systemMonitor: AndroidSystemMonitor) {
         createMetrics(meter)
 
         log("System monitoring started.")
-        log("$host's System Monitor")
+        log("$device's System Monitor")
 
     }
     // Create a resource
