@@ -77,26 +77,22 @@ class OTelConfig(private val systemMonitor: JVMSystemMonitor) {
             }
 
         meter.gaugeBuilder("disk_write")
-            .ofLongs()
-            .buildWithCallback { measurement: ObservableLongMeasurement ->
+            .buildWithCallback { measurement: ObservableDoubleMeasurement ->
                 measurement.record(systemMonitor.diskWrite())
             }
 
         meter.gaugeBuilder("disk_read")
-            .ofLongs()
-            .buildWithCallback { measurement: ObservableLongMeasurement ->
+            .buildWithCallback { measurement: ObservableDoubleMeasurement ->
                 measurement.record(systemMonitor.diskRead())
             }
 
         meter.gaugeBuilder("network_recv")
-            .ofLongs()
-            .buildWithCallback { measurement: ObservableLongMeasurement ->
+            .buildWithCallback { measurement: ObservableDoubleMeasurement ->
                 measurement.record(systemMonitor.networkRecv())
             }
 
         meter.gaugeBuilder("network_sent")
-            .ofLongs()
-            .buildWithCallback { measurement: ObservableLongMeasurement ->
+            .buildWithCallback { measurement: ObservableDoubleMeasurement ->
                 measurement.record(systemMonitor.networkSent())
             }
     }

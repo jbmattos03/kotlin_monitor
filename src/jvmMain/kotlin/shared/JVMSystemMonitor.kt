@@ -10,12 +10,12 @@ import oshi.hardware.NetworkIF
 data class JVMSystemInfoData(
     override var cpuUsage: Double,
     override var memoryUsage: Double,
-    override var networkRecv: Long,
-    override var networkSent: Long,
+    override var networkRecv: Double,
+    override var networkSent: Double,
     override var deviceType: String,
     var diskUsage: Double,
-    var diskWrite: Long,
-    var diskRead: Long
+    var diskWrite: Double,
+    var diskRead: Double
 ) : SystemInfoData
 
 // Environment variables
@@ -32,10 +32,18 @@ class JVMSystemMonitor : SystemMonitor {
     private var diskPrevTime: Long
     private val networkInterface: NetworkIF
     override val interval: Long = 5000 // 5 seconds
+    private val alertManager = JVMAlertManager(
+            deviceType = DeviceTypes(),
+            host = HOST,
+            thresholdConfig = ThresholdConfig()
+        )
 
     init {
+        // Initialize SystemInfo and AlertManager
         val systemInfo = SystemInfo()
+        alertManager.initializeAlerts(thresholdConfig = ThresholdConfig())
 
+        // Initialize hardware components
         processor = systemInfo.hardware.processor
         prevTicks = systemInfo.hardware.processor.systemCpuLoadTicks
         memory = systemInfo.hardware.memory
@@ -49,6 +57,14 @@ class JVMSystemMonitor : SystemMonitor {
         val currTicks = processor.systemCpuLoadTicks
         val cpuLoad = processor.getSystemCpuLoadBetweenTicks(prevTicks) * 100
 
+        val alertToCheck = alertManager.alerts.find { it.metric == "cpu_usage" }
+            ?: throw IllegalStateException("No alert found for CPU usage")
+        alertManager.checkAlerts(
+            alert = alertToCheck,
+            value = cpuLoad,
+            host = getDeviceType()
+        )
+
         prevTicks = currTicks // Update the previous ticks for the next calculation
 
         return cpuLoad
@@ -60,6 +76,14 @@ class JVMSystemMonitor : SystemMonitor {
         val usedMemory = totalMemory - availableMemory
         val usedMemoryPercentage = (usedMemory / totalMemory.toDouble()) * 100
 
+        val alertToCheck = alertManager.alerts.find { it.metric == "memory_usage" }
+            ?: throw IllegalStateException("No alert found for Memory usage")
+        alertManager.checkAlerts(
+            alert = alertToCheck,
+            value = usedMemoryPercentage,
+            host = getDeviceType()
+        )
+
         return usedMemoryPercentage
     }
 
@@ -67,36 +91,76 @@ class JVMSystemMonitor : SystemMonitor {
         disk.updateAttributes() // Update disk attributes
         val diskCurrTime = disk.transferTime
         val diskBusyTime = ((diskCurrTime - diskPrevTime).toDouble() / interval) * 100
+
+        val alertToCheck = alertManager.alerts.find { it.metric == "disk_usage" }
+            ?: throw IllegalStateException("No alert found for Disk usage")
+        alertManager.checkAlerts(
+            alert = alertToCheck,
+            value = diskBusyTime,
+            host = getDeviceType()
+        )
         
         diskPrevTime = diskCurrTime // Update the previous time for the next calculation
 
         return diskBusyTime
     }
 
-    fun diskWrite(): Long {
+    fun diskWrite(): Double {
         disk.updateAttributes() // Update disk attributes
-        val diskWrites = disk.writes
+        val diskWrites = disk.writes.toDouble()
+
+        val alertToCheck = alertManager.alerts.find { it.metric == "disk_write" }
+            ?: throw IllegalStateException("No alert found for Disk writes")
+        alertManager.checkAlerts(
+            alert = alertToCheck,
+            value = diskWrites,
+            host = getDeviceType()
+        )
 
         return diskWrites
     }
 
-    fun diskRead(): Long {
+    fun diskRead(): Double {
         disk.updateAttributes() // Update disk attributes
-        val diskReads = disk.reads
+        val diskReads = disk.reads.toDouble()
+
+        val alertToCheck = alertManager.alerts.find { it.metric == "disk_read" }
+            ?: throw IllegalStateException("No alert found for Disk reads")
+        alertManager.checkAlerts(
+            alert = alertToCheck,
+            value = diskReads,
+            host = getDeviceType()
+        )
 
         return diskReads
     }
 
-    override fun networkRecv(): Long {
+    override fun networkRecv(): Double {
         networkInterface.updateAttributes() // Update network attributes
-        val bytesRecv = networkInterface.bytesRecv
+        val bytesRecv = networkInterface.bytesRecv.toDouble()
+
+        val alertToCheck = alertManager.alerts.find { it.metric == "network_recv" }
+            ?: throw IllegalStateException("No alert found for Network received")
+        alertManager.checkAlerts(
+            alert = alertToCheck,
+            value = bytesRecv,
+            host = getDeviceType()
+        )
 
         return bytesRecv
     }
 
-    override fun networkSent(): Long {
+    override fun networkSent(): Double {
         networkInterface.updateAttributes() // Update network attributes
-        val bytesSent = networkInterface.bytesSent
+        val bytesSent = networkInterface.bytesSent.toDouble()
+
+        val alertToCheck = alertManager.alerts.find { it.metric == "network_sent" }
+            ?: throw IllegalStateException("No alert found for Network sent")
+        alertManager.checkAlerts(
+            alert = alertToCheck,
+            value = bytesSent,
+            host = getDeviceType()
+        )
 
         return bytesSent
     }
