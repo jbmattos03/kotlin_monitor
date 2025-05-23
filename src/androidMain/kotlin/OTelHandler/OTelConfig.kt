@@ -1,6 +1,7 @@
 package otelHandler
 
 import shared.AndroidSystemMonitor
+import shared.ThresholdConfig
 import io.opentelemetry.api.metrics.Meter
 import io.opentelemetry.api.metrics.ObservableDoubleMeasurement
 import io.opentelemetry.api.metrics.ObservableLongMeasurement
@@ -95,14 +96,12 @@ class OTelConfig(private val systemMonitor: AndroidSystemMonitor) {
             }
 
         meter.gaugeBuilder("network_recv")
-            .ofLongs()
-            .buildWithCallback { measurement: ObservableLongMeasurement ->
+            .buildWithCallback { measurement: ObservableDoubleMeasurement ->
                 measurement.record(systemMonitor.networkRecv())
             }
 
         meter.gaugeBuilder("network_sent")
-            .ofLongs()
-            .buildWithCallback { measurement: ObservableLongMeasurement ->
+            .buildWithCallback { measurement: ObservableDoubleMeasurement ->
                 measurement.record(systemMonitor.networkSent())
             }
         
