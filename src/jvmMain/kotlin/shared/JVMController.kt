@@ -1,10 +1,12 @@
 package shared
 
 import otelHandler.OTelConfig
+import org.slf4j.LoggerFactory
 
 class JVMController(private val otelConfig: OTelConfig) : MetricController {
     @Volatile
     private var running: Boolean = true
+    private val logger = LoggerFactory.getLogger(JVMController::class.java)
 
     override fun start() {
         otelConfig.initialize()
@@ -26,10 +28,10 @@ class JVMController(private val otelConfig: OTelConfig) : MetricController {
 
     override fun stop() {
         if (!running) {
-            println("System Monitor is already stopped.")
+            logger.warn("System Monitor is already stopped.")
             return
         }
-        println("Stopping System Monitor...")
+        logger.info("Stopping System Monitor...")
         otelConfig.shutdown()
         running = false
     }

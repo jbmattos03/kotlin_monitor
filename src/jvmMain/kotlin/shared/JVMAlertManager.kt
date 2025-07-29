@@ -4,6 +4,7 @@ import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import org.slf4j.LoggerFactory
 
 class JVMAlertManager(
     private val deviceType: DeviceTypes,
@@ -12,10 +13,15 @@ class JVMAlertManager(
 ): AlertManager {
     override val alerts = mutableListOf<Alert>()
     private val hostIdentifier: DeviceCategory = deviceType.getCategory(host)
+    private val logger = LoggerFactory.getLogger(JVMAlertManager::class.java)
+
+    init {
+        logger.debug("Host: $host")
+    }
 
     override fun addAlert(alert: Alert) {
         if (alert in alerts) {
-            println("Alert already exists")
+            logger.warn("Alert already exists")
         }
         else {
             alerts.add(alert)
@@ -23,6 +29,8 @@ class JVMAlertManager(
     }
 
     fun initializeAlerts(thresholdConfig: ThresholdConfig) {
+        logger.debug("Device type: $hostIdentifier")
+        logger.debug("Host: $host")
         alerts.clear()
 
         val supportedMetrics = listOf("cpu_usage", "memory_usage", "disk_usage", "disk_read", "disk_write", "network_recv", "network_sent")
@@ -38,7 +46,7 @@ class JVMAlertManager(
                 threshold = thresholdValue
             )
             alert.host = host
-
+            logger.debug("Inserting alert with name: ${alert.metric}, threshold: ${alert.threshold}, host: ${alert.host}")
             addAlert(alert)
         }
 }
@@ -48,7 +56,7 @@ class JVMAlertManager(
             alerts.remove(alert)
         }
         else {
-            println("Alert does not exist")
+            logger.warn("Alert does not exist")
         }
     }
 
@@ -57,24 +65,24 @@ class JVMAlertManager(
 
         if (managedAlert != null) {
             if (value > managedAlert.threshold) {
-                println("Alert ${managedAlert.metric} for host $host TRIGGERED: value ($value) > threshold (${managedAlert.threshold})")
+                logger.info("Alert ${managedAlert.metric} for host $host TRIGGERED: value ($value) > threshold (${managedAlert.threshold})")
 
                 managedAlert.value = value
                 managedAlert.setTimestamp()
                 sendAlerts(listOf(managedAlert))
             } else {
-                println("Alert ${managedAlert.metric} for host $host NOT TRIGGERED: value ($value) <= threshold (${managedAlert.threshold})")
+                logger.info("Alert ${managedAlert.metric} for host $host NOT TRIGGERED: value ($value) <= threshold (${managedAlert.threshold})")
             }
         }
     }
 
-    override fun sendAlerts(alertsToSend: List<Alert>) {
-        if (alertsToSend.isEmpty()) {
-            println("No alerts to send.")
+    override fun sendAlerts(alerts: List<Alert>) {
+        if (alerts.isEmpty()) {
+            logger.warn("No alerts to send.")
             return
         }
 
-        println("Attempting to append ${alertsToSend.size} alert(s) to alerts.json: $alertsToSend")
+        logger.info("Attempting to append ${alerts.size} alert(s) to alerts.json: $alerts")
 
         Thread {
             try {
@@ -84,10 +92,11 @@ class JVMAlertManager(
                 }
                 // Each call to sendAlerts will serialize the passed list (often a single alert)
                 // as a complete JSON array.
-                val jsonString = json.encodeToString(alertsToSend)
+                val jsonString = json.encodeToString(alerts)
 
-                val file = File("output/alerts.json")
-                file.parentFile.mkdirs() // Ensure the parent directory exists
+                val appDir = File(System.getProperty("user.home"), ".kotlin_monitor")
+                appDir.mkdirs() // Ensure the directory exists
+                val file = File(appDir, "alerts.json")
 
                 // Using FileOutputStream in append mode (true)
                 FileOutputStream(file, true).use { fos ->
@@ -95,17 +104,17 @@ class JVMAlertManager(
                     // Add a newline after each JSON entry (which is a JSON array in this case)
                     // This makes the file more manageable if you're reading it line by line later.
                     fos.write("\n".toByteArray())
-                    println("Alert(s) appended successfully to ${file.absolutePath}")
+                    logger.info("Alert(s) appended successfully to ${file.absolutePath}")
                 }
             } catch (e: IOException) {
                 e.printStackTrace()
-                println("IOException while appending alerts: ${e.message}")
+                logger.error("IOException while appending alerts: ${e.message}")
             } catch (e: kotlinx.serialization.SerializationException) {
                 e.printStackTrace()
-                println("SerializationException while appending alerts: ${e.message}")
+                logger.error("SerializationException while appending alerts: ${e.message}")
             } catch (e: Exception) {
                 e.printStackTrace()
-                println("Unexpected error while appending alerts: ${e.message}")
+                logger.error("Unexpected error while appending alerts: ${e.message}")
             }
         }.start()
     }

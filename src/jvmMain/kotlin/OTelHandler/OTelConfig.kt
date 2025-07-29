@@ -11,6 +11,7 @@ import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader
 import io.opentelemetry.exporter.otlp.http.metrics.OtlpHttpMetricExporter
 import java.time.Duration
 import io.github.cdimascio.dotenv.dotenv
+import org.slf4j.LoggerFactory
 
 // Environment variables
 val dotenv = dotenv()
@@ -23,6 +24,11 @@ class OTelConfig(private val systemMonitor: JVMSystemMonitor) {
     private val interval: Long = systemMonitor.interval
     private lateinit var provider: SdkMeterProvider
     private lateinit var exporter: OtlpHttpMetricExporter
+    private val logger = LoggerFactory.getLogger(OTelConfig::class.java)
+
+    init {
+        logger.debug("Host: $HOST")
+    }
 
     // Create a resource
     private fun createResource(): Resource {
@@ -106,13 +112,14 @@ class OTelConfig(private val systemMonitor: JVMSystemMonitor) {
         val meter = createMeter(provider)
         createMetrics(meter)
 
-        println("System Monitor started. Press Ctrl+C to stop.")
-        println("$HOST's System Monitor")
+        logger.info("System Monitor started. Press Ctrl+C to stop.")
+        logger.info("$HOST's System Monitor")
+        logger.debug("Device type: ${systemMonitor.getDeviceType()}")
     }
 
     fun shutdown() {
         provider?.shutdown()
         exporter?.close()
-        println("System monitoring stopped.")
+        logger.info("System monitoring stopped.")
     }
 }
