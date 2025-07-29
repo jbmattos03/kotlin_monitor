@@ -36,7 +36,7 @@ class JVMSystemMonitor : SystemMonitor {
     override val interval: Long = 5000 // 5 seconds
     private val alertManager = JVMAlertManager(
             deviceType = DeviceTypes(),
-            host = HOST,
+            host = getDeviceType(),
             thresholdConfig = ThresholdConfig()
         )
 
