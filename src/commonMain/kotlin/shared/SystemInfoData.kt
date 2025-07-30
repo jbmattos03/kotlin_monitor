@@ -5,5 +5,4 @@ interface SystemInfoData {
     val memoryUsage: Double
     val networkRecv: Double
     val networkSent: Double
-    val deviceType: String
 }

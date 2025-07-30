@@ -114,7 +114,7 @@ class OTelConfig(private val systemMonitor: JVMSystemMonitor) {
 
         logger.info("System Monitor started. Press Ctrl+C to stop.")
         logger.info("$HOST's System Monitor")
-        logger.debug("Device type: ${systemMonitor.getDeviceType()}")
+        logger.debug("Device OS: ${systemMonitor.getDeviceOS()}")
     }
 
     fun shutdown() {

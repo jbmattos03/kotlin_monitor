@@ -6,6 +6,5 @@ interface SystemMonitor {
     fun memoryUsage(): Double
     fun networkRecv(): Double
     fun networkSent(): Double
-    fun getDeviceType(): String
     fun run(): SystemInfoData
 }

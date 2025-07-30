@@ -17,7 +17,7 @@ data class AndroidSystemInfoData(
     override val memoryUsage: Double,
     override val networkRecv: Double,
     override val networkSent: Double,
-    override val deviceType: String,
+    val deviceModel: String,
     val temperature: Double
 ) : SystemInfoData
 
@@ -27,7 +27,7 @@ class AndroidSystemMonitor(private val context: Context) : SystemMonitor {
     private val alertManager = AndroidAlertManager(
         deviceType = DeviceTypes(),
         context = context,
-        host = getDeviceType(),
+        host = getDeviceModel(),
         thresholdConfig = ThresholdConfig()
     )
 
@@ -66,7 +66,7 @@ class AndroidSystemMonitor(private val context: Context) : SystemMonitor {
 
             val alertToCheck = alertManager.alerts.find { it.metric == "cpu_usage" }
             if (alertToCheck != null) {
-                alertManager.checkAlerts(alertToCheck, currentCpuUsage, getDeviceType())
+                alertManager.checkAlerts(alertToCheck, currentCpuUsage, getDeviceModel())
             }
             return currentCpuUsage // Explicit return for the successful path
 
@@ -87,7 +87,7 @@ class AndroidSystemMonitor(private val context: Context) : SystemMonitor {
 
         val alertToCheck = alertManager.alerts.find { it.metric == "memory_usage" }
         if (alertToCheck != null) {
-            alertManager.checkAlerts(alertToCheck, usedMemoryPercentage, getDeviceType())
+            alertManager.checkAlerts(alertToCheck, usedMemoryPercentage, getDeviceModel())
         }
 
         return usedMemoryPercentage
@@ -105,7 +105,7 @@ class AndroidSystemMonitor(private val context: Context) : SystemMonitor {
 
                 val alertToCheck = alertManager.alerts.find { it.metric == "temperature" }
                 if (alertToCheck != null) {
-                    alertManager.checkAlerts(alertToCheck, currentTemperature, getDeviceType())
+                    alertManager.checkAlerts(alertToCheck, currentTemperature, getDeviceModel())
                 }
 
                 return currentTemperature
@@ -124,7 +124,7 @@ class AndroidSystemMonitor(private val context: Context) : SystemMonitor {
 
         val alertToCheck = alertManager.alerts.find { it.metric == "network_recv" }
         if (alertToCheck != null) {
-            alertManager.checkAlerts(alertToCheck, networkRecv, getDeviceType())
+            alertManager.checkAlerts(alertToCheck, networkRecv, getDeviceModel())
         }
 
         return networkRecv
@@ -135,13 +135,13 @@ class AndroidSystemMonitor(private val context: Context) : SystemMonitor {
 
         val alertToCheck = alertManager.alerts.find { it.metric == "network_sent" }
         if (alertToCheck != null) {
-            alertManager.checkAlerts(alertToCheck, networkSent, getDeviceType())
+            alertManager.checkAlerts(alertToCheck, networkSent, getDeviceModel())
         }
 
         return networkSent
     }
 
-    override fun getDeviceType(): String {
+    fun getDeviceModel(): String {
         val manufacturer = Build.MANUFACTURER
         val model = Build.MODEL
 
@@ -172,7 +172,7 @@ class AndroidSystemMonitor(private val context: Context) : SystemMonitor {
             memoryUsage(),
             networkRecv(),
             networkSent(),
-            getDeviceType(),
+            getDeviceModel(),
             temperature()
         )
     }

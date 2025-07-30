@@ -13,7 +13,7 @@ data class JVMSystemInfoData(
     override var memoryUsage: Double,
     override var networkRecv: Double,
     override var networkSent: Double,
-    override var deviceType: String,
+    var deviceOS: String,
     var diskUsage: Double,
     var diskWrite: Double,
     var diskRead: Double
@@ -36,7 +36,7 @@ class JVMSystemMonitor : SystemMonitor {
     override val interval: Long = 5000 // 5 seconds
     private val alertManager = JVMAlertManager(
             deviceType = DeviceTypes(),
-            host = getDeviceType(),
+            host = getDeviceOS(),
             thresholdConfig = ThresholdConfig()
         )
 
@@ -66,7 +66,7 @@ class JVMSystemMonitor : SystemMonitor {
             alertManager.checkAlerts(
                 alertToCheck,
                 cpuLoad,
-                getDeviceType()
+                getDeviceOS()
             )
         }
 
@@ -83,12 +83,12 @@ class JVMSystemMonitor : SystemMonitor {
         val usedMemoryPercentage = (usedMemory / totalMemory.toDouble()) * 100
 
         val alertToCheck = alertManager.alerts.find { it.metric == "memory_usage" }
-        logger.info("${alertToCheck?.metric}")
+        logger.info("Value for memory usage: ${usedMemoryPercentage}%")
         if (alertToCheck != null) {
             alertManager.checkAlerts(
                 alertToCheck,
                 usedMemoryPercentage,
-                getDeviceType()
+                getDeviceOS()
             )
         }
 
@@ -102,11 +102,12 @@ class JVMSystemMonitor : SystemMonitor {
         val diskBusyTime = ((diskCurrTime - diskPrevTime).toDouble() / interval) * 100
 
         val alertToCheck = alertManager.alerts.find { it.metric == "disk_usage" }
+        logger.info("Value for disk usage: ${diskBusyTime}%")
         if (alertToCheck != null) {
             alertManager.checkAlerts(
                 alertToCheck,
                 diskBusyTime,
-                getDeviceType()
+                getDeviceOS()
             )
         } else {
             logger.warn("No alert found for Disk usage")
@@ -123,11 +124,12 @@ class JVMSystemMonitor : SystemMonitor {
         val diskWrites = disk.writes.toDouble()
 
         val alertToCheck = alertManager.alerts.find { it.metric == "disk_write" }
+        logger.info("Value for disk write: ${diskWrites} bytes")
         if (alertToCheck != null) {
             alertManager.checkAlerts(
                 alertToCheck,
                 diskWrites,
-                getDeviceType()
+                getDeviceOS()
             )
         }
 
@@ -140,11 +142,12 @@ class JVMSystemMonitor : SystemMonitor {
         val diskReads = disk.reads.toDouble()
 
         val alertToCheck = alertManager.alerts.find { it.metric == "disk_read" }
+        logger.info("Value for disk read: ${diskReads} bytes")
         if (alertToCheck != null) {
             alertManager.checkAlerts(
                 alertToCheck,
                 diskReads,
-                getDeviceType()
+                getDeviceOS()
             )
         }
 
@@ -157,11 +160,12 @@ class JVMSystemMonitor : SystemMonitor {
         val bytesRecv = networkInterface.bytesRecv.toDouble()
 
         val alertToCheck = alertManager.alerts.find { it.metric == "network_recv" }
+        logger.info("Value for network received: ${bytesRecv} bytes")
         if (alertToCheck != null) {
             alertManager.checkAlerts(
                 alertToCheck,
                 bytesRecv,
-                getDeviceType()
+                getDeviceOS()
             )
         }
 
@@ -175,22 +179,23 @@ class JVMSystemMonitor : SystemMonitor {
         val bytesSent = networkInterface.bytesSent.toDouble()
 
         val alertToCheck = alertManager.alerts.find { it.metric == "network_sent" }
+        logger.info("Value for network sent: ${bytesSent} bytes")
         if (alertToCheck != null) {
             alertManager.checkAlerts(
                 alert = alertToCheck,
                 value = bytesSent,
-                host = getDeviceType()
+                host = getDeviceOS()
             )
         }
 
         return bytesSent
     }
 
-    override fun getDeviceType(): String {
-        logger.info("Getting device type...")
+    fun getDeviceOS(): String {
+        logger.info("Getting device OS...")
         val device = System.getProperty("os.name").replace(Regex("\\s.*"), "")
-        
-        logger.debug("Detected device type: $device")
+        logger.debug("Detected device OS: $device")
+
         return device
     }
 
@@ -199,12 +204,12 @@ class JVMSystemMonitor : SystemMonitor {
         val memoryRes = memoryUsage()
         val networkRecvRes = networkRecv()
         val networkSentRes = networkSent()
-        val deviceTypeRes = getDeviceType()
+        val deviceOSRes = getDeviceOS()
         val diskRes = diskUsage()
         val diskWriteRes = diskWrite()
         val diskReadRes = diskRead()
 
-        return JVMSystemInfoData(cpuRes, memoryRes, networkRecvRes, networkSentRes, deviceTypeRes, diskRes, diskWriteRes, diskReadRes)
+        return JVMSystemInfoData(cpuRes, memoryRes, networkRecvRes, networkSentRes, deviceOSRes, diskRes, diskWriteRes, diskReadRes)
     }
 
     private fun printResults(stats: JVMSystemInfoData) {
@@ -215,7 +220,7 @@ class JVMSystemMonitor : SystemMonitor {
         println("Disk Read: ${stats.diskRead} bytes")
         println("Network Received: ${stats.networkRecv} bytes")
         println("Network Sent: ${stats.networkSent} bytes")
-        println("Device Type: ${stats.deviceType}")
+        println("Device OS: ${stats.deviceOS}")
         println("--------------------------------------------------")
     }
 
