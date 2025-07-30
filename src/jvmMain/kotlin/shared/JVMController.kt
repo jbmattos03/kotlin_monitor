@@ -9,7 +9,9 @@ class JVMController(private val otelConfig: OTelConfig) : MetricController {
     private val logger = LoggerFactory.getLogger(JVMController::class.java)
 
     override fun start() {
+        logger.info("Initializing OTel configuration...")
         otelConfig.initialize()
+        logger.info("OTel configuration initialized successfully.")
 
         // Add shutdown hook to handle Ctrl+C
         Runtime.getRuntime().addShutdownHook(Thread {
