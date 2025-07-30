@@ -16,6 +16,7 @@ class JVMAlertManager(
     private val logger = LoggerFactory.getLogger(JVMAlertManager::class.java)
 
     init {
+        logger.debug("Device type: $hostIdentifier")
         logger.debug("Host: $host")
     }
 
@@ -29,8 +30,6 @@ class JVMAlertManager(
     }
 
     fun initializeAlerts(thresholdConfig: ThresholdConfig) {
-        logger.debug("Device type: $hostIdentifier")
-        logger.debug("Host: $host")
         alerts.clear()
 
         val supportedMetrics = listOf("cpu_usage", "memory_usage", "disk_usage", "disk_read", "disk_write", "network_recv", "network_sent")
@@ -82,7 +81,7 @@ class JVMAlertManager(
             return
         }
 
-        logger.info("Attempting to append ${alerts.size} alert(s) to alerts.json: $alerts")
+        logger.info("Attempting to append ${alerts.size} alert(s) to alerts.json")
 
         Thread {
             try {
@@ -124,11 +123,11 @@ class JVMAlertManager(
     }
 
     fun setThreshold(metric: String, threshold: Double) {
+        logger.debug("Setting threshold for metric: $metric to $threshold")
         val existingAlert = alerts.find { it.metric == metric }
         if (existingAlert != null) {
             existingAlert.threshold = threshold
-        }
-        else {
+        } else {
             val newAlert = Alert(metric, threshold)
             addAlert(newAlert)
         }
